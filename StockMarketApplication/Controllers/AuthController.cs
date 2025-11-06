@@ -2,30 +2,52 @@
 using Microsoft.AspNetCore.Mvc;
 using StockMarketApplication.Service;
 using StockMarketApplication.Models;
+using Microsoft.EntityFrameworkCore;
 
-[ApiController]
 [Route("api/[controller]")]
+[ApiController]
 public class AuthController : ControllerBase
 {
-    private readonly StockmarketContext _context;
     private readonly JwtTokenService _jwtTokenService;
 
-    public AuthController(StockmarketContext context, JwtTokenService jwtTokenService)
+    private readonly StockmarketContext _context;
+
+    public AuthController(JwtTokenService jwtTokenService, StockmarketContext context)
     {
-        _context = context;
         _jwtTokenService = jwtTokenService;
+        _context = context;
     }
 
     [HttpPost("login")]
-    public IActionResult Login([FromBody] LoginRequest request)
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-        var user = _context.Users.FirstOrDefault(u => u.Username == request.Username && u.PasswordHash == request.Password);
+
+        // This is where you validate the user credentials from your DB.
+        // For demonstration, let's assume any user with a non-empty username is valid.
+        if (string.IsNullOrEmpty(request.Username) || string.IsNullOrEmpty(request.Password))
+        {
+            return Unauthorized(new { message = "Invalid credentials" });
+        }
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == request.Username && u.PasswordHash == request.Password);
+
         if (user == null)
         {
-            return Unauthorized("Invalid credentials");
+            return Unauthorized(new { message = "User Not Found" });  // User not found
         }
 
-        var token = _jwtTokenService.GenerateToken(user.Username, user.Role);
+        // Generate JWT token
+        var token = _jwtTokenService.GenerateToken(request.Username);
+
+        // save user token in database
+        var result = await _context.UserTokens.AddAsync(new UserToken
+        {
+            UserId = user.UserId,
+            Token = token,
+            Expiry = DateTime.UtcNow.AddHours(1), // assuming 1 hour expiry
+            IsRevoked = false
+        });
+
+        await _context.SaveChangesAsync();
         return Ok(new { Token = token });
     }
 }

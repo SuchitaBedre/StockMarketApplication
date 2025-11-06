@@ -1,37 +1,42 @@
-﻿namespace StockMarketApplication.Service;
+﻿using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Microsoft.IdentityModel.Tokens;
 
-public class JwtTokenService
-{
-    private readonly IConfiguration _configuration;
 
-    public JwtTokenService(IConfiguration config) {
-        _configuration = config;
-
-    }
-    public string GenerateToken(string username, string role)
+    public class JwtTokenService
     {
-        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
-        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+        private readonly IConfiguration _configuration;
 
-        var claims = new[]
+        public JwtTokenService(IConfiguration configuration)
         {
-            new Claim(ClaimTypes.Name, username),
-            new Claim(ClaimTypes.Role, role)
+            _configuration = configuration;
+        }
+
+        public string GenerateToken(string username)
+        {
+            var secretKey = _configuration["JwtSettings:SecretKey"];
+            var issuer = _configuration["JwtSettings:Issuer"];
+            var audience = _configuration["JwtSettings:Audience"];
+            var expiryMinutes = int.Parse(_configuration["JwtSettings:ExpiryMinutes"]);
+
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            var claims = new[]
+            {
+            new Claim(ClaimTypes.Name, username)
         };
 
-        var token = new JwtSecurityToken(
-            issuer: "MyApi",
-            audience: "MyApiUser",
-            claims: claims,
-            expires: DateTime.Now.AddHours(1),
-            signingCredentials: credentials);
+            var token = new JwtSecurityToken(
+                issuer: issuer,
+                audience: audience,
+                claims: claims,
+                expires: DateTime.Now.AddMinutes(expiryMinutes),
+                signingCredentials: credentials
+            );
 
-        return new JwtSecurityTokenHandler().WriteToken(token);
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
     }
-}
-
 
