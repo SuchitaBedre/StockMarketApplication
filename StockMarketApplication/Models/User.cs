@@ -1,18 +1,25 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Identity;
-using System.Xml;
+﻿using System;
+using System.Collections.Generic;
 
-namespace StockMarketApplication.Models
+namespace StockMarketApplication.Models;
+
+public partial class User
 {
-    public class User
-    {
+    public int UserId { get; set; }
 
-        private int UserId { get; set; }
+    public string Username { get; set; } = null!;
 
-        private string? Username { get; set; }
-        private string? Email { get; set; }
-        private string? PasswordHash { get; set; }
-        private string? Role { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    }
+    public string Email { get; set; } = null!;
+
+    public string PasswordHash { get; set; } = null!;
+
+    public string? Role { get; set; }
+
+    public DateTime? CreatedAt { get; set; }
+
+    public virtual ICollection<UserHolding> UserHoldings { get; set; } = new List<UserHolding>();
+
+    public virtual ICollection<UserToken> UserTokens { get; set; } = new List<UserToken>();
+
+    public virtual ICollection<Watchlist> Watchlists { get; set; } = new List<Watchlist>();
 }

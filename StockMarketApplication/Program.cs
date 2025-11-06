@@ -1,6 +1,55 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using StockMarketApplication.Models;
+using StockMarketApplication.Service;
+using System.Text;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddDbContext<StockmarketContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Configure JWT Authentication
+var jwtConfig = builder.Configuration.GetSection("Jwt");
+
+var key = jwtConfig["Key"];
+
+var issuer = jwtConfig["Issuer"];
+
+var audience = jwtConfig["Audience"];
+
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata= false;
+    options.SaveToken=true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = issuer,
+        ValidAudience =audience,   
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
+    };
+});
+
+builder.Services.AddAuthorization();
+builder.Services.AddScoped<UserInterface, UserServices>();
+builder.Services.AddScoped<UserHoldingInterface, UserHoldingServices>();
+builder.Services.AddScoped<StockInterface, StockServices>();
+builder.Services.AddScoped<StockPriceInterface, StockPriceServices>();
+builder.Services.AddScoped<WatchListInterface,WatchListServices>();
+builder.Services.AddScoped<JwtTokenService>();
+
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -17,7 +66,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

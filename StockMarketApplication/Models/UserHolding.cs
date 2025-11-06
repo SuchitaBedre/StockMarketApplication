@@ -3,15 +3,19 @@ using System.Collections.Generic;
 
 namespace StockMarketApplication.Models;
 
-public partial class Watchlist
+public partial class UserHolding
 {
-    public int WatchlistId { get; set; }
+    public int HoldingId { get; set; }
 
     public int? UserId { get; set; }
 
     public int? StockId { get; set; }
 
-    public DateTime? AddedDate { get; set; }
+    public int Quantity { get; set; }
+
+    public decimal PurchasePrice { get; set; }
+
+    public DateOnly PurchaseDate { get; set; }
 
     public virtual Stock? Stock { get; set; }
 
