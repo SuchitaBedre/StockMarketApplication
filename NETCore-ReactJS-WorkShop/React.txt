@@ -1,0 +1,505 @@
+//Create Recat APP for Stock
+
+
+npm create vite@latest my-stock--template react-ts
+
+
+npm install axios
+
+
+npm run dev
+
+curl https://localhost:7018/api/Student --insecure
+
+npm install @mui/material @emotion/react @emotion/styled
+
+npm install @mui/icons-material
+
+--compoenents folder we have 4 compoennets
+//StudentList.tsx
+
+import React, { useEffect, useState } from 'react';
+import { getStudents, deleteStudent } from '../services/studentService';
+import type { Student } from '../models/Student';
+import StudentForm from './StudentForm';
+import { List, ListItem, ListItemText, IconButton, Typography } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+
+const StudentList: React.FC = () => {
+  const [students, setStudents] = useState<Student[]>([]);
+  const [studentToEdit, setStudentToEdit] = useState<Student | undefined>(undefined);
+
+  const loadStudents = () => {
+    getStudents().then(res => setStudents(res.data));
+  };
+
+  useEffect(() => {
+    loadStudents();
+  }, []);
+
+  const handleDelete = (id: number) => {
+    deleteStudent(id).then(loadStudents);
+  };
+
+  return (
+    <>
+      <StudentForm studentToEdit={studentToEdit} onSave={loadStudents} />
+      <Typography variant="h5" sx={{ mt: 4 }}>Student List</Typography>
+      <List>
+        {students.map(s => (
+          <ListItem key={s.id} secondaryAction={
+            <>
+              <IconButton edge="end" onClick={() => setStudentToEdit(s)}>
+                <EditIcon />
+              </IconButton>
+              <IconButton edge="end" onClick={() => handleDelete(s.id!)}>
+                <DeleteIcon />
+              </IconButton>
+            </>
+          }>
+            <ListItemText primary={`${s.name} (${s.age})`} />
+          </ListItem>
+        ))}
+      </List>
+    </>
+  );
+};
+
+export default StudentList;
+
+//StudentForm.tsx
+
+
+import React, { useState, useEffect } from 'react';
+import { TextField, Button, Card, CardContent, Typography } from '@mui/material';
+import { createStudent, updateStudent } from '../services/studentService';
+import type { Student } from '../models/Student';
+
+interface Props {
+  studentToEdit?: Student;
+  onSave: () => void;
+}
+
+const StudentForm: React.FC<Props> = ({ studentToEdit, onSave }) => {
+  const [student, setStudent] = useState<Student>({ name: '', age: 0 });
+
+  useEffect(() => {
+    if (studentToEdit) setStudent(studentToEdit);
+  }, [studentToEdit]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (student.id) {
+      updateStudent(student).then(onSave);
+    } else {
+      createStudent(student).then(() => {
+        setStudent({ name: '', age: 0 });
+        onSave();
+      });
+    }
+  };
+
+  return (
+    <Card sx={{ maxWidth: 400, margin: 'auto', mt: 4 }}>
+      <CardContent>
+        <Typography variant="h6">{student.id ? 'Edit Student' : 'Add Student'}</Typography>
+        <form onSubmit={handleSubmit}>
+          <TextField
+            fullWidth
+            label="Name"
+            value={student.name}
+            onChange={e => setStudent({ ...student, name: e.target.value })}
+            margin="normal"
+          />
+          <TextField
+            fullWidth
+            label="Age"
+            type="number"
+            value={student.age}
+            onChange={e => setStudent({ ...student, age: parseInt(e.target.value) })}
+            margin="normal"
+          />
+          <Button type="submit" variant="contained" color="primary" sx={{ mt: 2 }}>
+            {student.id ? 'Update' : 'Add'}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default StudentForm;
+
+
+//Header.tsx
+
+import React from 'react';
+import { AppBar, Toolbar, Typography, Button } from '@mui/material';
+import { Link } from 'react-router-dom';
+
+const Header: React.FC = () => (
+  <AppBar position="static">
+    <Toolbar>
+      <Typography variant="h6" sx={{ flexGrow: 1 }}>
+        Student Portal
+      </Typography>
+      <Button color="inherit" component={Link} to="/">Home</Button>
+      <Button color="inherit" component={Link} to="/students">Students</Button>
+   
+    </Toolbar>
+  </AppBar>
+);
+
+export default Header;
+
+//Footer.tsx
+
+import React from 'react';
+import { Box, Typography } from '@mui/material';
+
+const Footer: React.FC = () => (
+  <Box sx={{ bgcolor: 'primary.main', color: 'white', p: 2, mt: 4, textAlign: 'center' }}>
+    <Typography variant="body2">© 2025 Student Portal. All rights reserved.</Typography>
+  </Box>
+);
+
+export default Footer;
+
+
+//models-->Student.ts
+
+export interface Student {
+  id?: number;
+  name: string;
+  age: number;
+}
+
+
+//services->studentservices.ts
+
+
+import axios from 'axios';
+import type { Student } from '../models/Student';
+
+const API_URL = 'https://localhost:7018/api/Student'; 
+
+export const getStudents = () => axios.get<Student[]>(API_URL);
+export const getStudentById = (id: number) => axios.get<Student>(`${API_URL}/${id}`);
+export const createStudent = (student: Student) => axios.post(API_URL, student);
+export const updateStudent = (student: Student) => axios.put(`${API_URL}/${student.id}`, student);
+export const deleteStudent = (id: number) => axios.delete(`${API_URL}/${id}`);
+
+//App.tsx
+
+
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Container } from '@mui/material';
+import Header from './components/Header';
+import Footer from './components/Footer';
+import StudentList from './components/StudentList';
+import Login from './components/Login';
+import Register from './components/Register';
+import Dashboard from './components/dashboard';
+
+const App: React.FC = () => (
+  <Router>
+    <Header />
+    <Container>
+      <Routes>
+        <Route path="/" element={<h2>Welcome to the Student Portal</h2>} />
+        <Route path="/students" element={<StudentList />} />
+      </Routes>
+    </Container>
+    <Footer />
+  </Router>
+);
+
+export default App;
+
+
+
+//Cors in NET 
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("my-stock11", policy => policy.WithOrigins("http://localhost:5175")
+                         .AllowAnyHeader()
+                         .AllowAnyMethod()
+    .AllowCredentials());
+});
+
+
+curl https://localhost:7018/api/Student --insecure
+
+
+
+//Task-
+//Perform student login & registration where you have to register 
+first student details then perform the login role
+
+A.Create one api method in .NET Core API
+B.Create one service in React 
+C.Use React material form for registration/login
+D.After student login student can perform below operation
+-->Update details
+-->Update Password
+-->Get student details
+
+
+//.NET CORE API
+
+..//SQL Table
+
+//CREATE TABLE [dbo].[StudentsAll](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[Username] [nvarchar](100) NOT NULL,
+	[PasswordHash] [nvarchar](255) NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+select * from StudentsAll
+
+ Scaffold-DbContext "connectionstrings" Microsoft.EntityFrameworkCore.SqlServer -OutputDir Models -Context StudentDbContext -Force
+//AuthController
+
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+using StockApp1.Models;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+
+namespace StockApp1.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class AuthController : ControllerBase
+    {
+        private readonly StudentDbContext _context;
+        private readonly IConfiguration _config;
+
+        public AuthController(StudentDbContext context, IConfiguration config)
+        {
+            _context = context;
+            _config = config;
+        }
+
+        [HttpPost("login")]
+        public IActionResult Login(Login login)
+        {
+            var user = _context.StudentsAlls.FirstOrDefault(u => u.Username == login.Username);
+            if (user == null || !BCrypt.Net.BCrypt.Verify(login.Password, user.PasswordHash))
+                return Unauthorized();
+
+            var token = GenerateJwtToken(user);
+            return Ok(new { token });
+        }
+
+        [HttpPost("register")]
+        public IActionResult Register(Register register)
+        {
+            var exists = _context.StudentsAlls.Any(u => u.Username == register.Username);
+            if (exists) return BadRequest("User already exists");
+
+            var user = new StudentsAll
+            {
+                Username = register.Username,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(register.Password)
+            };
+
+            _context.StudentsAlls.Add(user);
+            _context.SaveChanges();
+            return Ok("User registered");
+        }
+
+        private string GenerateJwtToken(StudentsAll user)
+        {
+            var claims = new[] {
+            new Claim(ClaimTypes.Name, user.Username)
+        };
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var token = new JwtSecurityToken(_config["Jwt:Issuer"], _config["Jwt:Audience"], claims,
+                expires: DateTime.Now.AddHours(1), signingCredentials: creds);
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+    }
+}
+//Appsettings.json
+
+  },
+  "Jwt": {
+    "Key": "this_is_a_very_secure_key_1234567890",
+    "Issuer": "JwtAuthApi",
+    "Audience": "JwtAuthApiUser"
+  },
+    "AllowedHosts": "*"
+  }
+
+
+//Program.cs
+
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options => {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+
+        };
+    });
+
+//React
+
+//Login.tsx
+
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { login } from '../services/authService';
+
+const Login: React.FC = () => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const navigate = useNavigate();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();//
+    try {
+      await login(username, password);
+      alert('Login successful!');
+      navigate('/dashboard'); // or wherever you want to redirect
+    } catch {
+      // Error already handled in authService
+    }
+  };
+
+  return (
+    <form onSubmit={handleLogin}>
+      <h2>Login</h2>
+      <input value={username} onChange={e => setUsername(e.target.value)} placeholder="Username" required />
+      <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" required />
+      <button type="submit">Login</button>
+    </form>
+  );
+};
+
+export default Login;
+
+//Register.tsx
+
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
+const Register: React.FC = () => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const navigate = useNavigate();
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await axios.post('https://localhost:7018/api/Auth/register', {
+        username,
+        password
+      });
+      alert('Registration successful!');
+      navigate('/login'); // Redirect to login page
+    } catch (error) {
+      alert('Registration failed');
+      console.error(error);
+    }
+  };
+
+  return (
+    <form onSubmit={handleRegister}>
+      <h2>Register</h2>
+      <input
+        type="text"
+        value={username}
+        onChange={e => setUsername(e.target.value)}
+        placeholder="Username"
+        required
+      />
+      <input
+        type="password"
+        value={password}
+        onChange={e => setPassword(e.target.value)}
+        placeholder="Password"
+        required
+      />
+      <button type="submit">Register</button>
+    </form>
+  );
+};
+
+export default Register;
+
+//AuthServices.ts
+import axios from 'axios';
+
+const API_URL = 'https://localhost:7018/api/Auth/login';
+
+export const login = async (username: string, password: string) => {
+  const res = await axios.post(`${API_URL}/login`, { username, password });
+  localStorage.setItem('token', res.data.token);
+};
+
+export const getToken = () => localStorage.getItem('token');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

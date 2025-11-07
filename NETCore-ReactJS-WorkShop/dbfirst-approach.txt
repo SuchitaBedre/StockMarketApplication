@@ -1,0 +1,186 @@
+
+ Scaffold-DbContext "Data Source=TRNG6072;User ID=sa;Password=cybage@123456;Security=True;Encrypt=False;Trust Server Certificate=True" Microsoft.EntityFrameworkCore.SqlServer -OutputDir Models
+
+//IStudentnterface
+    public interface RepositoryStudent
+    {
+
+        IEnumerable<Student> GetAllStudents();
+        Student GetStudentById(int id);
+        void CreateStudent(Student student);
+        void UpdateStudent(Student student);
+        void deletestudent(int id);
+
+    }
+}
+
+//Studentservice
+
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ActionConstraints;
+using Microsoft.EntityFrameworkCore;
+using StockApp1.Models;
+
+namespace StockApp1.Services
+{
+    public class StudentServices
+    {
+        //    private readonly StudentContext _context;
+        //    public StudentServices(StudentContext context)
+        //    {
+        //        _context = context;
+        //    }
+
+        //    public IEnumerable<Student> GetAllStudents() =>
+        //        _context.Students.ToList();
+
+        //    public Student GetStudentById(int id) =>
+        //        _context.Students.FirstOrDefault(s => s.Id == id);
+
+        //    public void CreateStudent(Student student)
+        //    {
+        //        _context.Students.Add(student);
+        //        _context.SaveChanges();
+        //    }
+
+
+        //    public void UpdateStudent(Student student)
+        //    {
+        //        _context.Students.Update(student);  // Mark the student as modified
+        //        _context.SaveChanges();  // Commit the changes to the database
+        //    }
+
+        //    public void DeleteStudent(int id)
+        //    {
+        //        var student = GetStudentById(id);
+        //        if (student != null)
+        //        {
+        //            _context.Students.Remove(student);
+        //            _context.SaveChanges();
+        //        }
+        //    }
+
+        //    public void deletestudent(int id)
+        //    {
+        //        throw new NotImplementedException();
+        //    }
+        //}
+    }
+}
+
+//StudentController
+[Route("api/[controller]")]
+    [ApiController]
+    public class StudentController : ControllerBase
+    {
+        private readonly RepositoryStudent _studentRepository;
+        public StudentController(RepositoryStudent studentRepository)
+        {
+            _studentRepository = studentRepository;
+        }
+        [HttpGet]
+        public IActionResult GetStudents()
+        {
+            var students = _studentRepository.GetAllStudents();
+            return Ok(students);
+        }
+
+        [HttpGet("{id}")]
+        public IActionResult GetStudent(int id)
+        {
+            var student = _studentRepository.GetStudentById(id);
+            if (student == null)
+                return NotFound();
+
+            return Ok(student);
+        }
+
+        [HttpPost]
+        public IActionResult CreateStudent([FromBody] Student student)
+        {
+            if (student == null)
+                return BadRequest();
+
+            _studentRepository.CreateStudent(student);
+            return CreatedAtAction(nameof(GetStudent), new { id = student.Id }, student);
+        }
+
+        [HttpPut("{id}")]
+        public IActionResult UpdateStudent(int id, [FromBody] Student student)
+        {
+            if (id != student.Id)
+                return BadRequest("Student ID mismatch");
+
+            var existingStudent = _studentRepository.GetStudentById(id);
+
+            if (existingStudent == null)
+                return NotFound("Student not found");
+
+            
+            existingStudent.Name = student.Name;
+            existingStudent.Age = student.Age;
+          
+
+           
+            _studentRepository.UpdateStudent(existingStudent);
+
+            return NoContent(); 
+        }
+    }
+}
+
+
+//Program.cs
+
+builder.Services.AddDbContext<StudentContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+
+builder.Services.AddScoped<IRepository,StudentRepository>();
+
+
+
+Dummy Data
+INSERT INTO Users (Username, Email, PasswordHash, Role)
+VALUES 
+('john_doe', 'john@example.com', 'john123', 'Investor'),
+('jane_smith', 'jane@example.com', 'jane123', 'Investor'),
+('admin_user', 'admin@example.com', 'admin123', 'Admin');
+
+INSERT INTO Stocks (TickerSymbol, CompanyName, Sector, Exchange)
+VALUES
+('AAPL', 'Apple Inc.', 'Technology', 'NASDAQ'),
+('GOOGL', 'Alphabet Inc.', 'Technology', 'NASDAQ'),
+('TSLA', 'Tesla Inc.', 'Automotive', 'NASDAQ'),
+('MSFT', 'Microsoft Corporation', 'Technology', 'NASDAQ'),
+('AMZN', 'Amazon.com, Inc.', 'Consumer Services', 'NASDAQ');
+
+INSERT INTO StockPrices (StockId, Price, PriceDate)
+VALUES
+(1, 190.25, GETDATE()),
+(2, 2750.50, GETDATE()),
+(3, 710.00, GETDATE()),
+(4, 340.75, GETDATE()),
+(5, 135.40, GETDATE());
+
+INSERT INTO UserHoldings (UserId, StockId, Quantity, PurchasePrice, PurchaseDate)
+VALUES
+(1, 1, 10, 180.00, '2025-10-01'),
+(1, 3, 5, 650.00, '2025-09-15'),
+(2, 2, 8, 2500.00, '2025-09-20'),
+(2, 5, 4, 120.00, '2025-10-05');
+
+-- =========================
+INSERT INTO Watchlist (UserId, StockId)
+VALUES
+(1, 4),
+(1, 5),
+(2, 1),
+(2, 3);
+
+INSERT INTO UserTokens (UserId, Token, Expiry, IsRevoked)
+VALUES
+(1, 'token_john_123', DATEADD(DAY, 7, GETDATE()), 0),
+(2, 'token_jane_456', DATEADD(DAY, 7, GETDATE()), 0),
+(3, 'token_admin_789', DATEADD(DAY, 30, GETDATE()), 0);
