@@ -9,6 +9,19 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+builder.Services.AddAuthorization();
+builder.Services.AddScoped<UserInterface, UserServices>();
+builder.Services.AddScoped<UserHoldingInterface, UserHoldingServices>();
+builder.Services.AddScoped<StockInterface, StockServices>();
+builder.Services.AddScoped<StockPriceInterface, StockPriceServices>();
+builder.Services.AddScoped<WatchListInterface, WatchListServices>();
+builder.Services.AddScoped<JwtTokenService>();
+
+builder.Services.AddControllers();
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 // Add services to the container.
 builder.Services.AddDbContext<StockmarketContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -28,19 +41,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             
         };
     });
-builder.Services.AddAuthorization();
-builder.Services.AddScoped<UserInterface, UserServices>();
-builder.Services.AddScoped<UserHoldingInterface, UserHoldingServices>();
-builder.Services.AddScoped<StockInterface, StockServices>();
-builder.Services.AddScoped<StockPriceInterface, StockPriceServices>();
-builder.Services.AddScoped<WatchListInterface,WatchListServices>();
-builder.Services.AddScoped<JwtTokenService>();
 
 
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
